@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Megger — Gerador de Documentos</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{--red:#E8001D;--dark:#111111;--mid:#333333;--light:#888888;--border:#DDDDDD;--bg:#F7F7F5;--white:#FFFFFF;--success:#1A7F37;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh;}
+header{background:var(--white);border-bottom:2px solid var(--red);padding:18px 40px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:100;}
+.logo-text{font-family:'DM Sans',sans-serif;font-size:26px;font-weight:600;color:var(--red);letter-spacing:-1px;}
+header .subtitle{font-size:12px;color:var(--light);text-transform:uppercase;letter-spacing:2px;padding-left:20px;border-left:1px solid var(--border);}
+.container{max-width:860px;margin:0 auto;padding:48px 24px;}
+h1{font-size:28px;font-weight:600;margin-bottom:6px;letter-spacing:-0.5px;}
+.page-desc{font-size:14px;color:var(--light);margin-bottom:40px;}
+.section{background:var(--white);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden;}
+.section-header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:#FAFAFA;}
+.section-num{width:26px;height:26px;background:var(--red);color:white;border-radius:50%;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.section-title{font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:1px;}
+.section-body{padding:24px;}
+.row{display:grid;gap:16px;margin-bottom:16px;}
+.row.cols-2{grid-template-columns:1fr 1fr;}
+.row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+.row.cols-1{grid-template-columns:1fr;}
+label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--mid);display:block;margin-bottom:6px;}
+input,textarea,select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dark);background:var(--white);transition:border-color 0.15s;outline:none;}
+input:focus,textarea:focus,select:focus{border-color:var(--red);}
+textarea{resize:vertical;min-height:80px;}
+#items-list{margin-bottom:16px;}
+.item-card{border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;background:#FAFAFA;position:relative;}
+.item-card .item-num{font-family:'DM Mono',monospace;font-size:11px;color:var(--light);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;}
+.remove-btn{position:absolute;top:12px;right:12px;background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;color:var(--light);font-family:'DM Sans',sans-serif;}
+.remove-btn:hover{border-color:var(--red);color:var(--red);}
+.add-item-btn{width:100%;padding:11px;border:1.5px dashed var(--border);border-radius:6px;background:none;font-size:13px;color:var(--light);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;}
+.add-item-btn:hover{border-color:var(--red);color:var(--red);background:#FFF5F5;}
+.generate-area{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:28px 24px;text-align:center;}
+.doc-types{display:flex;justify-content:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;}
+.doc-type{display:flex;align-items:center;gap:8px;padding:8px 16px;border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;user-select:none;transition:all 0.15s;background:var(--white);}
+.doc-type input[type=checkbox]{display:none;}
+.doc-type.checked{border-color:var(--red);background:#FFF0F0;color:var(--red);}
+.doc-type .checkmark{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;}
+.doc-type.checked .checkmark{background:var(--red);border-color:var(--red);color:white;}
+.generate-btn{background:var(--red);color:white;border:none;border-radius:8px;padding:14px 40px;font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:0.5px;transition:all 0.15s;}
+.generate-btn:hover{background:#C0001A;}
+.generate-btn:disabled{background:var(--light);cursor:not-allowed;}
+#status-area{margin-top:24px;display:none;}
+.status-line{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:6px;font-size:13px;margin-bottom:8px;}
+.status-line.working{background:#FFF8E1;color:#7B5800;}
+.status-line.done{background:#E6F4EA;color:var(--success);}
+.status-line.error{background:#FEECEC;color:#B00000;}
+.spinner{width:14px;height:14px;border:2px solid #E0B000;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.download-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px;}
+.download-card{background:#F0F7FF;border:1px solid #C8DEFF;border-radius:8px;padding:16px;text-align:center;}
+.download-card .doc-icon{font-size:28px;margin-bottom:8px;}
+.download-card .doc-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1A3A8F;margin-bottom:12px;}
+.dl-btn{display:inline-block;background:#1A3A8F;color:white;border:none;border-radius:6px;padding:8px 20px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;letter-spacing:0.5px;}
+.dl-btn:hover{background:#122A6E;}
+@media(max-width:600px){.row.cols-2,.row.cols-3{grid-template-columns:1fr;}header{padding:14px 20px;}.container{padding:28px 16px;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo-text">Megger.</div>
+  <div class="subtitle">Gerador de Documentos para Exportação</div>
+</header>
+<div class="container">
+  <h1>Novo Envio para Reparo</h1>
+  <p class="page-desc">Preencha os campos e gere Invoice, Packing List e Relatório Técnico em .docx prontos para download.</p>
+
+  <div class="section">
+    <div class="section-header"><div class="section-num">1</div><div class="section-title">Identificação do Documento</div></div>
+    <div class="section-body">
+      <div class="row cols-3">
+        <div><label>Número do Documento</label><input type="text" id="doc_number" value="MG-2026-0001"></div>
+        <div><label>Data</label><input type="date" id="doc_date"></div>
+        <div><label>Motivo do Envio</label><select id="reason"><option value="Repair">Repair</option><option value="Calibration">Calibration</option><option value="Warranty">Warranty</option><option value="Return">Return</option></select></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><div class="section-num">2</div><div class="section-title">Remetente (From)</div></div>
+    <div class="section-body">
+      <div class="row cols-2">
+        <div><label>Empresa</label><input type="text" id="from_company" value="Megger Brasil Ltda."></div>
+        <div><label>CNPJ</label><input type="text" id="from_cnpj" value="14.274.717/0001-36"></div>
+      </div>
+      <div class="row cols-1"><div><label>Endereço</label><input type="text" id="from_address" value="Rua Bom Sucesso, 220 – Sala 3801"></div></div>
+      <div class="row cols-3">
+        <div><label>Cidade/Estado</label><input type="text" id="from_city" value="São Paulo/SP"></div>
+        <div><label>CEP</label><input type="text" id="from_zip" value="03305-000"></div>
+        <div><label>País</label><input type="text" id="from_country" value="Brasil"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><div class="section-num">3</div><div class="section-title">Destinatário (To)</div></div>
+    <div class="section-body">
+      <div class="row cols-1"><div><label>Empresa</label><input type="text" id="to_company" value="MEGGER"></div></div>
+      <div class="row cols-1"><div><label>Endereço</label><input type="text" id="to_address" value="4545 West Davis Street"></div></div>
+      <div class="row cols-3">
+        <div><label>Cidade/Estado</label><input type="text" id="to_city" value="Dallas, Texas"></div>
+        <div><label>ZIP</label><input type="text" id="to_zip" value="75211-3422"></div>
+        <div><label>País</label><input type="text" id="to_country" value="United States"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><div class="section-num">4</div><div class="section-title">Equipamentos</div></div>
+    <div class="section-body">
+      <div id="items-list"></div>
+      <button class="add-item-btn" onclick="addItem()">+ Adicionar equipamento</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><div class="section-num">5</div><div class="section-title">Embalagem e Peso</div></div>
+    <div class="section-body">
+      <div class="row cols-3">
+        <div><label>Nº de Caixas</label><input type="number" id="num_boxes" value="1" min="1"></div>
+        <div><label>Peso Líquido (kg)</label><input type="text" id="net_weight" value="19,80"></div>
+        <div><label>Peso Bruto (kg)</label><input type="text" id="gross_weight" value="24"></div>
+      </div>
+      <div class="row cols-1"><div><label>Dimensões</label><input type="text" id="dimensions" placeholder="60 x 40 x 30 cm"></div></div>
+    </div>
+  </div>
+
+  <div class="generate-area">
+    <div class="doc-types">
+      <label class="doc-type checked" id="lbl-invoice"><input type="checkbox" id="chk-invoice" checked onchange="toggleDoc('invoice')"><div class="checkmark">✓</div>Invoice</label>
+      <label class="doc-type checked" id="lbl-packing"><input type="checkbox" id="chk-packing" checked onchange="toggleDoc('packing')"><div class="checkmark">✓</div>Packing List</label>
+      <label class="doc-type checked" id="lbl-report"><input type="checkbox" id="chk-report" checked onchange="toggleDoc('report')"><div class="checkmark">✓</div>Relatório Técnico</label>
+    </div>
+    <button class="generate-btn" id="gen-btn" onclick="generateDocs()">⬇ Gerar e Baixar Documentos</button>
+    <div id="status-area">
+      <div id="status-msg"></div>
+      <div id="download-area"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const LOGO_B64 = "iVBORw0KGgoAAAANSUhEUgAAA/EAAADRCAYAAACEhTI+AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDYuMC1jMDAyIDc5LjE2NDM2MCwgMjAyMC8wMi8xMy0wMTowNzoyMiAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgSWxsdXN0cmF0b3IgQ1M2IChNYWNpbnRvc2gpIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOkMzNUI0NjgxOTZEODExRUE4MTQ5RDhCQzdEMkFFM0VCIiB4bXBNTTpEb2N1bWVudElEPSJ4bXAuZGlkOkMzNUI0NjgyOTZEODExRUE4MTQ5RDhCQzdEMkFFM0VCIj4gPHhtcE1NOkRlcml2ZWRGcm9tIHN0UmVmOmluc3RhbmNlSUQ9InhtcC5paWQ6NTZFRjcxRDg5NkM5MTFFQTgxNDlEOEJDN0QyQUUzRUIiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6QzM1QjQ2ODA5NkQ4MTFFQTgxNDlEOEJDN0QyQUUzRUIiLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz6FfX4UAAAtkUlEQVR42uydT2hkW37fT2t6PIxnmFevAwljLPcVtMFMjKs6C3t2uk0WhhAidTZZhS4tvPDCaYlAFiZBEoS3CAGpTTZOMCqFbAJhuhqCg0OgS8kEnI27RGbhJA90nxvGZGFNPY/tyfO8cef+pN99Xa0uSXWr7p/zO+fzgUL9/nT3ved865zf9/x+55w7f/Kzv/TGwXV8eO/16SS2lz5f7R7kP7bp/uvJdXGHVgAAAAAAgKZZoQluZDPS907pegAAAAAAAEy8NTZie+Hz1W6S/+jR9QAAAAAAAJh4a2zmprYT2zvT7QAAAAAAAJh4q6SRve86XQ4AAAAAAICJt0o0JfVadUAmHgAAAAAAABNvlphMbUp3AwAAAAAAYOIt0zlf7cZi5DfobgAAAAAAAEw85tYGlNIDAAAAAABg4jG3vnO+2pVr5Tp0NQAAAAAAACbeOjGU1D+hmwEAAAAAADDxoRB6SX1KFwMAAAAAAGDiQyHYTPz5ajfJf/ToYgAAAAAAAEx8KHR033iIcKAdAAAAAAAAJj44Qt03vk7XAgAAAAAAYOJDI7iM9flqt+PIxAMAAAAAAGDiAyQJsKQ+pVsBAAAAAAAw8aESWkn9Bl0KAAAAAACAiQ+VTd4HAAAAAAAAMPE2CKakXt+jQ5cCAAAAAABg4kMmlOz1E7oSAAAAAAAAEx86oewjT+lKAAAAAAAATHzo9M5Xu4nlF9Dn79GVAAAAAAAAmPgY2OT5AQAAAAAAABNvA+v7ydfpQgAAAAAAAEx8LJgtqc+fW06kJxMPAAAAAACAiY8Kq0Y4pesAAAAAAAAw8bFhtaR+g64DAAAAAADAxMeG1ZJ6SukBAAAAAAAw8VGSWnrY89WuXCvXodsAAAAAAAAw8TFirTT9CV0GAAAAAACAiY+VTT3t3QopXQYAAAAAAICJj9rIW3hI3b/fo7sAAAAAAABscpcmqAQpqR8YeE4OtAMveJCslT2bYfJxdjam5aLRh2hjrgXHXBcjWgya1l3OONfehFaDhrSZlvwtWa7PjJaDBuO56biue0uMJ9r8pBhLJcZjTC3PnT/52V96QzNUwof3Xp96Lb7z1e5zjHw15H19h1a4NeBI9NOdMcAvw0QHfeFk6p+ZAGxpJFFN9CrSSBEInGiAMGbhB24w6jJG3dcxahndZYXeNCgds7AEC2qy0OG6/qe0or+i0KiMj6fFP6NTWNCwpzpnF5qtkmIsFZ2O0Cgmvim2cmM38NjAy8TwA7oJE1/zoF6Y97YoDL0YuRHG3jvTvqkBaq8hnUxUBycaEGDq4zRIhe6aHJ8K3Q3RHVzRZKpaXHfVLW4va5pOHAtQMHveFq1u6M+mtVrM4S90LCWew8TXwjA3do89NvESxDynmzDxFQbFbQ3qZRlPTQAE081qRQLUJ6qXxINHkoB1mH+e1Vlqmr/3gfPz/JGdGL4DUwtGTzzph0J3x3W2f/7efefnDTTy3oPIjdD0nOl9POveLkBlLmLyvvPVI8mi9KOaY7wnnul1MjWOjoiwMPGViis3dh96bOKP8h99ugkTX4Fxt7wlo5FgOvKgp6NjjS8G6togqC5zkbfBS0+D9UchBz9TJtZnoyRj0L6rIauUv/9e/mPXw3fez991L1Lj7vs4eBsyTx7HauhjMvGq2V3Vre/JmZGOK1GbeUsH2008F1VHst25uRt6+nzshYdFBvVUg5B+IK8kk9S2fPJ3k4DkWf4ZUKIVXQDg1Oil+XPvajAwoBdN6q6j3+mnRnQn3xNZVD/In13Gn0PGn6D02Hf+LySVodj3LHoVw3TMWBns3G0pzivmb9HkTqxJGUtXzA0NPOOGjw91vtpte89VSH0cTSCSf17lv3zpwq3gkIlLyp5/kL/rkU5ksEAAIO2X//JMtdIxqAPp/zMNwMGIedfM85kGoNZ019HnPtP3AONalDHEXS7QpIG+aqpj5Q/0fTv0vnndTs/dVjX5SrawxahHSyb+hYFn9DXb/YQ+hhLmvQhEehG9el+D6ee6jxvKmagQzG9h5l+hAe+1t23YvM8087qIlNK7ZsfAXefHuR+NaVbnTMy87TG0H8grbauZj2ruNmPitUw9831g0wPkfMNKYEAmvr0BPZ0y70nETbGpEwGZ+Zv1ctFOzs/9t8vSUw0c0NPe6a6nFUIHAZj3q8h481IXEjFFdkzQboBaxMwzhlodQ1/FVFG3Yux5KakvyflqN3E2Mqpyuj/7Apsf0KUUWm4teBm5eb9Kn8Bkpl46qpfnEehlm6y8V9rbc5cLR6H3x6aOPSm97qUOiwXvEE3Qsmb+lS7wgp/a7WusF/oYeqTbBDDxnnFsZALmecpDKX3zA/q2BsVMutdTBCYperkws7HpRd75JXvl29WdZo52I3rtjupuDwV4o8OOVuew4H090i5SSfKSSjbv9Cum9sjFs/DUj8HImzLx916fyumDme+Tr2cl9etGupdS+maDEQlEyCTMH5i8jLm8emrBJ8bATL4jR5TXt6K7TRdH5ug6dnVrD+N0uzpMdfzbpjXm4qK9WPz0Jt4T7cbYF8Eb+RWDz2zB7PlknC1kzSilbzYYOXPhnp5bJ1GWV+skiIG97P8jmqEx3Ylhkm0bsRtYCb5fYuRb0+GeI/u+CMXiJ4tQLRp4F/ciaPBG3qKJp6R+Tjw9ZG8WlNI3FxS/JCheiqK8ejMCvRQVG326/Z2AAENVv/ZYOJo97qC7Zsc/WUTapTWWGzNVu5wt0qx+pb3PIjfw0/N2kFU05ky8ltSPPX/MRO9mb5sNA106yft0wBhDUGwICaSfhzopFAGsu1zwSenu90i1baC+sapPS2DkPRj/OC+mWu1iKJvVL2PFWw5CPNtoxehzW8jG+3A3uwXBshe+5sGcbGqtk8JRiJpxlODdGpRSWo+Bx8gHqUEymPUgmmWfPAa+TYK7vtOqibdg/FpdwdVKgMRAO1FKX/9gntIatRHifisMfLx9j4G3YeSf0wy1GXgMUL0cYeSZv1vi4pwGTHzL3Ht9mjlK6r1eRJgTKaUnE1+vgWcwx8yVNVJoplzfE5Aur7s9DHwpUhaQMPAYebii4QPm79u9UUhnGq0YfnZK6m/Gwn54DDwGHiOPkQohIOW7trjuRHMcHrbYmMP3FQOPkYfiOk6uQJxfe0F81y2b+IGBZ2xlted8tZsYMXCU0tcDq7HtBdUmDw/UAAAjtTjP2ae8sHniwM0lxnoWkJbW4MVBpRj41swUhwcur2GJ+anMmR/5rgex4GHWxOu94r5nchM11E2TGuhCSunrGcwlIO7TEq2xbS27QABQzVhPGy5kno4wT0sHo+huOQ1yB3z7Rp6FqCXbkHG0NE819sHEt4iFTG4bq4wWSukHjCGVByRiHimn8iMoSQkAomOTrFIpqBiqhp5uhQE0aJHiylbmoMXiPplzUlpiId2Zrz60buItZHLb2BdvIZA8dlDlQE5Zql+YCEo0+CcAqNAUEIzOHXj2aYnKCCKr1LAGt9GgN4h2uXGhvIY7xH3LeSXr87VpE2+kpL7XZEl9/ndZMPBZ3ndjB1UO5GRT/aLje1CiQf9TuqryYJRqGALPNsYbzrSYX4MsevtHSkVJabYdW0GWHTdNz9crAXSChYxuk8aaU+njQ4I3SgIJSsrCwk89PKVdbx2vCDyrp59/7tMMtxp4zhHweGxgf3wpA8oi/PI8sfzw5k28Ho42QSRvjYOBbqOUvrqARPqbzB9BSVndsI+u3uCKQHS27hLGq9qNPNwyJvP99Br2x89Hz7FYXAWJ5bNsVgLpBErq3UUpvXypE8/bglL66gJiMgo28LGPKCUFvgsQ25wpMRKLSJ6bKvoIGmbD6oPfDaQD5JT6vufPKCs9hw38Hb5DKX11hLIfSippxvr5NP9k+ikoVpzv6/umxt5PTo/e/jg7O/ThYfQWg4SvDzSsu9RR/QHtEsoiUjFHnug/j927FanF96yrY721ygOpYBvkc2aGZKEhf7aFiW8JKak/X+1OnN+lJRsNmHgLq0mU0lcTEMvEbPkgI5mcn+WfUT5R31aZMbrGEIje+85GSVkRlPiw9YcDsADdQWxz5razXUYvCZAXOmfeZm5HV969o8a+mDMtIAsuj1AuNEBHSurz75W5JONKQJ3ge+On56vd2syGluv7PkGNKaWvdIKziAQXj/LBck0y03MY+Jnkv08CmZ3886G7XEHNPH9vL06PJgsPLekudWThoT39WT69f5B/ZL58nH8Wyk7L4rEYlPwjc6XMmfvO/7OkUst7lcEcJkvqQzLxzww8Y50DkoUAiSx8vAHxWM27fEZV/sEa2Kzlv9zxPDDZ9uAuZ7Kh0Aacogytjr3O3iFgQzXvW1WWlauh35M/29VfHbosnN0CTZFafOhgTLxmeDPPH3PD6J9d5aQE8Rkxybg/rNq8zwhOJCB5pAsG9N0VNKuR8PWBhnUnmiOjBm3pz9pVXLIQvaWZ99piWjXzsvD92Pm7+J1o9RhAE1ozt91mJbBO8N0kbtZYUu97kCSl9JmDZQOS1NlaMdzSQKERtDzfZyPfbzEb/ySyr4toYDTjw5aeZoktC59do7sRUmgFS1l4MdNSrTZocM4c6pzpq5GnegyaIrX2wHcD64Bj5//VFGK2Kx2gz1e7m0b6BuKa0LaaDEamgpJJbpQlKHnp/DwnQvqw0ZNQI8iGSgAqwaic1jye56wFXXWXz4YjU1wn/cDfr9DdaE7dJRosrqvuuOu5vnHPUhY+UwOftTBnjqfmTN/0eJGNbyOWgOjoYuJbRErqc0MrA2Di8WNuVG3iHaX0sQQkPWdnpXCrzUnXcyMv2fidhk+qD9WkjvLP8SJaU8Mln4EG+9JGu44tB1WOWaGaVIkz5HCwYdnvsZq0gX62tFz4iePgvzqwkoUXDT1u80q1KSP/ysP2eVJD3AxwFXNj8EqAneD7AXd1lNT7LjxK6avBSkZh34dVcw2ufb37s+mKodBK6cW8FwclDqrQytQBiRZuO7DCRmDvI7rY0ts1KrkyUv8cMU+P0F20497jRW9qqdrIu8sDYr0zVxb3Kxtl4uLdDpTogj4mvkUsZHwrM93nq10Z2BLP35dS+iXRgaVv4FHHevKtF2hQsh9zcKnlu6EEQBJg7NRxy8G0qcp/PHT+n9xsgZAqQPYL816T7ka6iLSPbCoZ9/rORlXNft2HvpbU4aGnho0bLupD+lsWr2V8+1Dn11mfO+7yVgP5fwfO/2sKF8FUrBScideMr+8HF1WZnbAQJA0cLEvfyHN6l/nWRYXMs8dKGrwDNxQjVVxTeNiAZiyc3Oy7iQqllL44bGyvwfHqoSMrvywWsvCZT4vePs/jMo9Zy5Iaic3Xioq2ebZzyP+j/69UJH3owqtcw8R7gO+Z3yqDat/LFYf3Xp8SBC+PhVXoQx9KAq8h5mx8CKX0hYFvVF9TJzdjqMKbm8robtSw7sZq5LlJYQGmDg/0HS+3e02d2+ATHccBpFWR6bi2tew5DFPb0GTRO4RY/z4m3gPj6Pnzdao4UT7/M2Si8n3V6AXj5dIBiYUtExPncRmolsD6ZsRqzyzon2+9lL4wUpOWtIOhWow0EN2NW9LdRQUAultsbDXwjCOfyuhnEPU2tIARzT2sWntaIRfCgjeZ+LbRknrfjXwVWQoLQRKn0scxcQ3bMlkl8PHQy7qDzVCMVKva0r+f0vo50UxoYvgVLg7F9ER3GPnyWKhc8/oQZs3Q+rbIkOrYAosx0NL5SU2aCWHBm4PtPMH3DHAVwTul9HFgIatg4TAmHxeU6v4Or2OkKg1qH2HkgxmzbuKxL1uDpow8upsDI5VrmW7V8R0ft6amqHyx+EfK5xmvboVMPAH7XFRRUu97oEQpfRwByajN+21LmjDfVojJxF/Plm9nLHh8BZNvdA0/+75vZc5TgTGEMeY9M9KWMS58h4jMW42dvzBVuQaY+MXQDHCwJfVV7KmPdAKwhoV+tnSFoHfPWvMp9Vb3ww99zVTp+QqMbfaN1Cx8PS3c5+syfcPE9jMLDalmbERMZJpWKtp0IXRgscHymMzM/LUSuHhDLqmnlD4OLKw6jwy1p497tWopebc0Ec3A92z3lqO8+TrdyZ7CxOjjb/n8cLrAwP74m7Xn+8Ll2ELl2hQnHvYzRn5+9lusaAvlxHpMfFtG0nMBSUn9ohOO7wH6MV8vAhIPg2AfFxzq+i5bzcLv+64pzWqQFQ1Ld76fFj4dGMNsTJxKb+174eEzrSP1ueOzw5bnSarWMPGLYaSkvnTplxr/xON3muRtzxfXX3MXc0Di4zP3arpq7r5R3R9aeEgNjjKGqWBM/L4R3Y2MjruYu0tOjLWpj5UfPaQ+Fz4s+D0z2G6JlQddiUDEIZbU+77ajIGPJyA5NdiuPlbn9Iz8mXUzMHBVoTnj1zAWF4/GRrLw6O5mUgPPaElnztPxOEXqt+vMhzFNS/kzTDwmfiE0I+xzUJgsUFLv+z5pTqWPZ6LKDLbraSR9bdHEm1q110PuLH4H6gTd1a+7kSMb/w5GzmKYGFuk/MIQetjfGPmb2Uc/4bMSyXsGU1KfG/7E8yCJUvqIgmFj2SufqaPqomOsDTLfrpSbE87/eJfE4DMP0Z15LJg6DiWMKD5qeS71KTY7pUsw8SFPdmXK432fqDDwFcAqc3SBVIJ+zI4dA75Spk380GJ2VKtAOPnZlqmz2l8+PncXyV+Lb5VFLF5h4hfn3uvTkfO75LFMST2l9AQkvjAiIInW+DB2vDVTGUHKJQ+StQTdNQqL5m/hDJm4nps583oGNEEc3I3oXWWy2/b4+TbnDAR9PtQuo5S+MiwcDpXmQfsbuqoyA5RWWAJnrtTQ+NaMF47yTquBtXXd9ZGdGe3t5uP8Ll0V5xzXlNfxsLJIvM0jQ22YYeL949hzEy8Z9r2b/ofz1S6n0jNBQbh0PP2zMFLzPT/BuT0mWklhWXdgx8RDvHNcU3hXWaSLCoxVNRDLnngpqff9moOeHlp3m9H3GQ7awcQDfb4IJ5YfngMezWp4bFx3E8dWDs6Qod/hLcxFmPhgsX7Anc8DVqYLJVANrDLDMli7qzsjeGLcaoGTANqceZf5EuBiLDBeWQSY+BsZeP581141pwffJR4/O6X0FcHqcrRUeTBTYuzdQwg8CJ7oszb4hG6kco1+B8dCMiY+ZO69PpUJ2+dV65tK6n03dlVVOTAIAcRHCNlEzBQmnsAdoDmowHiXE5oAEx86Vkvqn/gcCFFKXymsLkNUWLynewaMgQDtsE4TADAHYeLDx/ey7/fM+vlqt+O5saOUvlpYXQawx4QmsEUIBxJyqCIAOPs3bQAm/naMltT7frXcM75KALAgZA/C4T5NAADAPAqY+FhNZ3rln32+Wm6sCyMAAItABjscEpoA0B0AJh4w8XXhe/n3xi2m3ie4G756ujQBABBIAmDiAebgU5oAEx8F916fTjw38pu6D172w0spvc97pNkPXz3siQcAAkkAAJiHEU2AiY+JF54/X7EP3udTVymlrwfaFGIioQkAAAAAMPHzYKWk3udD7SilrwfumwZMPEDNPEjWOgG8A98ftnEA8B3AxMeDltQPPH5EKalPPQ9wKaUHALikRxPQZy2AiedwTIicj7MzvgOY+OjwvaT+wONno5QewOPvp6WHDSSbyFkWgIkHAABMfN3kJlQyyT6vXvmcJeBueAwY+Iu1A8ZCMCLryM7ceR5k4sOALCQAYOIjhJJw2o2ABAAjgiGMz8SHUD3B4pFzpzQBRAyJH0x8tLygCcobeD1TAAiEAQ1VQddyY+t2AMrpMcBtkNKNLHwD+gdMfHRoST2mqRwsfNTIx9kZeoTYTLz1LPYmkkN3TfMgWcPAX0ImEgAw8ZFCaTjtRVAC0B7WzQglzc7kAmQnN8KWjfwGqrsgowkAABMfJ9x3XsLAU0rfCLQxLGOmRtae2WpWUe8aJxNvd+xKDbc1unNUrwEAJj5aclMqWU8mgfmglL4ZTmgCiAyrWcU+XfcO1qqITFZR6KJXgty+YEQTAAAmPk4oEb+dCe1EIAwEtTVhNav4FKm9Q2ZNd1pNYY0nSM207gAAluIuTfAFUlK/TTPcCKX0mPirPLJYuk1Q6yWJZBct6Yls6Ew+MfjMsoA0MKQ70Vwfqb3DiYU2yce3O3QVAFQBmXhFS+rJft4MpfTNTfRiwCwsmHCtFmaqSqxlF3eR2XuMDD7zU3RnHuI3AMDERwwH3F3PRK/jA4LhaXp0E/qpkL5mGb0nf07J3qbI7D0yg8/cs3Kwop6m30dm7/JxdiYmfmKg/xgzAAATXwOYVNrGJywcbsfVWv5iNTPlfVZU91AfILGZZipzNm/XsJLdRnfXMzLwjCx8AwAmvmruvT7NHCVZ10EpPQHJLFK6yVszJUYqM/jo2way8WL4ElR2LRbn0dT3LGn+fNuMuTfCwjcAYOIjhpL696GUvh0TZuLqQy0rBsxUlRx5rHcxURyCat9MWdNd4tgLfxsW4hSrtyEAgGdwOv37DBzlahYnxlAZOf/3P26gEa/NlMVFFsmK9j/OzgaeGSkJvp8jq7nGLYuGU25IOMh1t+Op7jB/NyBbOfK2ypz/VTKmbkMAiInz1W7Pig/ExF9BrlDLO3Do7N5ZXAdUJ7THCwMmXg4j29HybfDPTFnlINfVWCtSfDFSLzFSc5mpUd5eVh9ftnOc5O/g08KkBJTspZ4P6TffK2WeYuIBvEXm+NTCg1JOf71xgkuye69PRzRDa8GwBCQWzDHlxX7qZ+xsHjJWTKTPfSg9nTLwGKn5sTxvHOkp8M4D7UmJfx85zY2FpEOPU+oBABNfD5QG0xb0QTmeWrkaDP2YQjT1sk0jj4FfmBPDz95R3bXa5xj48lg5S8ZxvgEAYOKrR0rqMa9fQCk9fTBv0MtZEpipOuipoUpaMFEJBn5hrM+hrRl5WTjKP88x8EFr7+LcD7oKADDxmNc6kFJ6rtxrGdlf6mxkFjY5qZ6AtkYj/6rJElT9u15h4Bcet6xkROcx8v0GdXexaOU4l2cZnhl5zgNOqgcATHzF6JVqsR/URTWCP1hZVDqirN47MxVKZVFhqGoNfDULeuA4xI455K3uZFx7XvfYlv/5e46FoyrGvMzZOJOB2y4AABNPABK1cYyBgaGA9znZBe8I6bBOOUTxTAxPlTpT8y4m6sxxUCNzyPtsTumuUjMvmf78I7pjn3R82kv17AMAgFJwxdztgW8/0nenlN4j9P7bgRE9FnuYH8V87ZwGZse6HaJtZEEypECxo4ZHDlQcLtPOWr78RL9bLD5VO26NjdzbXQbR3a6Oxy8WvYpOFwL6qr0EtVSuvUHexrtG2lYWceSZtyKeL6Wfnudt8BD1giW+8R/+xcK/9yf/+3vus9/9L+7z734fE181UlJ/vtqdRBrYkYX3j2fOzqJStEZeTeGRtoEX3yPpAzW7oe2z7eh3QoJg0ZkY+VP96a4ae83c9zSw72p7YKDqn0tCzDAXunOqNzlAsrjScXx13NMzFkR/6+7yDmJK5tEeRv7yuyHfpQPHIioY5O6v/OpSv/cr//Afu8//x++5H/7GP3Nv/vgzTHzFDF2c2fgBXe8XmtUaaQBoxcjLYWSP9ZCr0AORRANGX8eLYxf2YVkdfb/NInBXgwXtzyWhl4mnV8dltOcFh/nnqSFz2Nd55HEMi9+6sLVrKKYBqG0h4BuDD9yf9v9RKSPPnvjbeRbhO4/vvT7N6Hov2Tf2vIka+b2AA5Gels6feWzgnZb98r2GpnUnmuOQVGhDexODMZwY2rMmb+JoYc6Um2zk4NCXGHiAS770rW+7r/3mr5Uz/zTbzci+8PPVbubiKrmklN7foGRkLBtfIHtIN/KfO57sEV82CCmyvpLlsVQWKwHtAd8kaEF3XJkGbWAtG+/c25s4hjpnZgHMmRJD9x1nQEAESHn8j//g99836t/8GbfyzZ+7tgT/pzZ/za389r9zf/W9+QpxMPHzIQPpdmTvC/6y4y6vIbJGsU9eTPy+NTOvQYgYkXXDhmTgLssX2XsIjaGLjxnBO7SgPTkP5JmzuaXjYnuQHqK4b83M6/kw8g4bjjMgICLEwP/oo+9c+99XfvEj941//dtuZfUX3jfyf/uX3f/73n/GxFfIcUQmnlJ6/4OSsaGT6meRustrdURnElwNfQxONADpubcHUSUBaMdyQAu2ka1AXKUFbYx7ci2g5QywzPV9zcy/0DnTuz3zugVges5ksRhgBpJp/4tnH7mv/8t/+95/u/O1r8/952Di5yCyknpK6W0g2fhN45OkfJ+ktPsgn/zHGpyMms7Qa4Y90eDjvv5MA9aOxfJSsG+kLF35BWHOmc+Nv0NxcOeRGvoTnTMbPThWF7g7Ok8WcyaZdoAS/Pi//uHSfwYmfn5i2UtKKb2NgFgyqvsBabIIAnb1VGcJSjJ3eV1Y5t4eyDa+LQMxdY3Y1T+/MK1d/XUSo6EgGw8tQjYe2hr3hoFds1kYejd1zaHMm5+6t1cdunkWxacWsqdJp369PmMeBYAluPPXvoqJb9jchm7ih5TSmwpKDvWwuDTA1ytM/eaMgIPOXx6y8dDGmDXQsuaU1oAW2HHhlnmns75XzJcAfvLlX/mbM//95+P/OfefwRVzc6LmNvS7rl/Q0+bYcrriDlDCTE00oAVomn2aAFoa9zL0BwCtG/i/8/Pup7ffL4b8q9d/6H78u/9n7j+HTHw5ZL94yPt+KKU3GJQEVlYPzWmHrCi0oTs5qV4qQbZpDWhBf1LBZvmGEQDwnK/83X/gvvy3vj3zv638zP2Zp9ILf/ZPyuVWMPHlTW6oZklK6cnoEpRAXFi9rhBsIwuPfcd2DmgHqWCThExCUwBA1YhJv86oz0Iy8H/+z/+p+/y73y/399DU86Ml9aFmqymltx+UZDQDlEFPNaa8FJrW3UTHLIC29PeYlgAAH/jsP/579/mrPyq/WEDTYXYVSunDCEqopoCy2tlzlycbA+Nok7qTthrQEpUwZuwvrT9pMxaSAKB1vvrru+4bg98q/fsop18sSAvtihxK6QMJSh4kaxKUPKc1oCSiGymrp7x5cYrsMtta5ke2c3DHdDXfX9nql9IUpebMgW5F69MaAFAVfzn8N+6z//R77/37lW/+dffl3kP35fTvuTudv/HOf/vSt77tvvqbf9/96KPvzP33kIkviZrd0LItlNKHE5QMHdkFKK+bzFFeuiyPtSJmTFPMrbti4YNF5MXZ0awyLKZB0d+AlgCAqvjJH3//4pT5q5/Pfue/uz/7jX/lfvjr/Zm/Tw7EKwMmHtM7uff6lAksrKBE+pPrw6CsbkboZmH2tf0chrS07ihrXpyBHGyqv8bIL2fkaT8AaAQ5wE6y9e+Z8tVfcHe++RVMfM0MAwrU2MMZZlAigd2AlgB004iR2qMZltIdFUTlGav5LPiUJlmKRxh5AGiKv/zuf5v57+8+/DlMfJ0EVlJPKX24gbEEeIe0BCygG4z8fAyvGClYXHcDxqv5DbyaTqhOfxOMPAA0xZsf/sXSfwYmPm7zK6X0ZOLDDkykPBqTARj5eowU363qxyt0N4eBV9MJ9Rh5NAgAtSJ75DHxLaHm1/okioGPIzAZYDYAI18pA4wUusPAh2nk0SAAtMWXfn4NE48JngtK6eMy8g8dh24BhmppAy/tgpGqXXcsPGLg0SAABMubyf9979/d+drXMfENcWz42Smljy8okSBwzbHnD8oHs5xaf8k+e+Ab093AXV57iGm9XDh6iIFvRYMsfgNALfzkf70fjv/U+q9i4psgN8Gj/Edm9PEx8HEGJVIqKEHJPq0BJXQjB449ijiYlfd+zCn0jetu6DhsbGvOhaMuiqlFg8Xi94jWAIAq+fEf/P57/+5L3/q2W/nFzly//y5NWIkZ3jb43M/ouqgDk70HyZoEJUf5J6FFYA7NjHLNSDD7PP+kEb36SI1UNuf/30Mt1ZqoXHdi5A/yTz+iVx+r7uZdwOiglto0eHHgXa5DifV2aWsAKDhfXXz99Ecffefisyhk4pfHYkl9du/1KSXVBCZiTiQrz7VOMHcwm3/EUEl5fehZeXm/HXnfEgYeM1Wf7iQbLeX1WQSvfFH5UsLAo7tmdHioc+aI1gCAtsHEL4maYWtBBaX0MB0c7xCYwILB7CDQV5Qx8qG+59w8SNbIwteru6ELe+FxpLrbWWD/O9prRoOZLmTGsqAEAJj4oDnmecF4YDLWwGSLwARKBLOil0cunAUgeQ/JgD4umX0vIBtav+6KhUfZ2jEI5LVEa1ta9VG6Su5BspagjMZ1WCwoyfkyHHwHAJh4o1gKJCilh5sCEzkFeQ0zX9m4MI5AMyNdALJs5gvz/ki3mSxKiuwb012xiGS5IqQw72t6EvqikIVvR4MTPexyDTO/NBPHgbsAmPimyU1xZihYp5QeMPP1BiJS6rsW213iU2a+MFUW3n1QkXkv4ITw5nU3VjO/pt89C7oTrT2uwLxj4jHz1pH4YkfnzD2aA2B+OJ2+Oo6NTKSU0kMpMy9G50GyluY/n7i4TocuG5TLd2sY+13OWg68lWtGArPN/LOhP31hrH01qKGvUr4KremuMAM7ufamdefLFodsSndZxX/2uoHxMQozn/8QIyq3v8hc+dSxwDILaSdJKB1XtHgKgImHpZAB6cDzZxxTSg8LBicy0Y7UmPXV0McenIynjHuGSmYGtAN3uQjUUYO7oT+ThgNG0e8L+VlXX+mhdh0Dmo1Be0Odk7fU0K+r7poeswrd1T1GpIw43mmwGPsSNfObLu7rXCdXvg9UKwBg4v1ASurPV7tjz40NWXiowphJyeqhBiebERn6IntwQhCykG4KY+XU1PfUfHQ1uO1V1Edj/ZzKz0UOCgvVSMWo2SlDf1V391V3VfWbGJRsSnejJt5PFynAX/2JJooKkZ7Ol7EY+qyYM/V7CAAVm3gOkqiOHc8DOQuD6LGaJLARnBSGvqOBSZHxCiFAydQMih5HDZrBWEz9yM0os9WtG/Ma4+L3Tzzonyf0bHS6cx6UA28YGUvR3+UYNVZDn1yZM0O42WJ8Zc4Mod9HRtodqh2vTHjjO2/evKG7AKBSNEDpaYDSc/5nKcduKovmLjNpBJ5QRu9nvms81/RDeiso3XVUd14bwFx3d+itW/tyujKp5/yvbhu5FipPAOAtlNMDQB1BW+beltJNG51EA5UPNEjpNBisjKYM+6f6zxMy7FABTw08I9s/wsOng/vQ3XJzZpHFvmrsE50ji+0fxaduijl8oka92KqUscAN4Adk4gHAC6ZMfkG6wB8zng4ayQ5AA7o1kQ11l6eib9FjQWnvlTOQsdWrJ6H6/p+eIxddEJ+eI1nUBjAEmXgA8IKp7P2s4ALAV7adjf2sn9BVwRk4CweKkomvb868OkdyeBxARKzQBAAAAAsZKTHvT408Lhm2sNg18pyndBUAACYeAADAF6xk4YWM7gqDB8la39m5G57FIwCAGmBPPAAAQHkjJaXMr6w8LyeEB6M7K2cwFDxknzUAQPWQiQcAACjPkaFnxUSFpTszd4pj4AEAMPEAAACt8yBZO3A2DhXDxIelu767vFbOCiN6DQAAEw8AAOCDkdo29tgn9Jx53cmi0ZGxx2bxCACgJrhiDgAAZpkGMQwnH2dnA1rjHQN/ZPDRR8Z0J9fhHeba43qytwb+pcFHZ/EIAKAmyMQDAMAsUjGsuYE4U/OKgbdp4LPcDGeGnjdxl9enie729CA3DLyhffBTjBhGAQAw8QAA0KyZKn5+YeZjNFWGDbxlI9WJ3czn75waNvBjKikAADDxAADQvqk/UlN1kH+SSIzUkWEDL1gvaS7M/A+kLzQzHYPutg0beOEFQyYAQH1wTzwAAMwyEfNMDqP8c5x/hqFl3aYOErNuGj+01DdS8eHeVoFcx1h1NwhQd4nqLjX+KtwPDwCAiQcAAA9NfIEYqWH+eZEH7kPj711kfrcD6EZZXHkcsO5coTtnfCFJdSeae+rsZt8L5ByGNUZRAABMPAAANGcoUrf4adiFoT+xZKwCM1EFW9ZuF1jAxM8y9CMrh/mp7uTud1k4SgLRndwssMNICgCAiQcAABsm/irjKWM18vBde2rc+4F1oyyerFnLTi9p4q/qTvR2otqbePaeyZTuQju0b83YjQgAAJh4AADAxN/ASA3Wqbs8wXrc0vttuMsMaBJoN8p+8S2D2qsrKClMfZu666nmRHuhHtAnCyaPGEUBAOrlLk0AAAANkrqpQ7tyY1MY+yz/fKJma+IquqJKDbsY9a4apzSSdt43aODr7JvetHFW3Y1Vd6f68+JTRRZZDXuif+e6/ozhmrxjhjgAAEw8AAA0T9NZwvQaI+QKQz/1rydquq5y372bVU8j7r8R5cyljP3mDN1dtOOV/3/WdX0fXPm+xGLWZ5FZO4MBAAATDwAAodDx7FmuGvJNuuhG9mmCSkhv+Wd4l2c0AQBAM6zQBAAAAMHg5QGCEDxSITOgGQAAMPEAAABQDstZ+B7dZ5YdazchAABg4gEAICQ+oAlMYj0L36ELTcJeeAAATDwAALQMGVGbbNEEgO4AADDxAAAA4D/7nEgPLTDkDAYAAEw8AAAAlGOcG6m9AN7jPl1pCtkDTxYeAAATDwAAACUJxUgldKUt3XGYHQAAJh4AAPwgpQnMIKeCj2kGaJjDXHdDmgEAABMPAAAA8zPIjdQhzQANI9s3dmgGAABMPAAAAJQzUuxHhqbJ8s8jmgEAABMPAAAAJQx8oEYqpWu9Rva/P2YfPAAAJh4AADziQbKW0Apek4mBx0hBCwb+EecvAABg4gEAwD8w8f4iBopMKGDgAQAi5y5NAAAAYMLAk4EHDDwAAJCJBwAA8JxR6Ab+QbLWo5u9Q4z7Qww8AIB/kIkHAIBpOjSBVxxGcp0XuvMLuQN+i8oPAABMPAAA+A8ZUT8Q87STm6gBTQENs5/rbo9mAADAxAMAAMB8jNxlFjSjKaBBRG+PKZ8HAMDEAwAAwHxI9l2yoIcRvjvl9O2y7y63blA+DwCAiQcAAIA5GKiBzyJ9f7ZxtMPIXW7bIPsOAICJBwAAo6zTBI2bKDHvI5oCGiRzl1s20B0AACYeAACMc5J/UpoB896CqZRSbsrq62/nfQ5MBACwzZ03b97QCgAA8AUPkjUxUpv5Z0MNPcaqOsQ8PaN8+VrtFbrbRHeVMlTdjWgKAABMPAAAxGGs1tXQs3e5PJkYKDHwHBxWSnc993YxCd0tprvCvGc0BwAAJh4AAOI0VkWWvoupn8tAHZN1r0x3ojcWk25mMqW7Ec0BAICJBwAAmGWuelMGS34daxm0mKYX8hPj3oj2UtVdV3WXRNoUY9XdEN0BAGDiAQAAFjFXiRoqMVj3p34dEhM1Tydq2kf0fOu6KxaUemrsQ9SdMFLdjVV7bNEAAMDEAwAA1Grui2x9cZ2d70ZLzFKWf07112P2GJs19x01+B3nf9WIaG2ihj1T3ZFpBwAATDwAAHhjtgpTVRgs4QP37v7njqtuP3Rhkpz+PL3y78dkOaPQXeLeluKnU/9p/cr/mlb0V2b6KTi58u8zFokAAOAm/r8AAwB+3WnzQ99NgwAAAABJRU5ErkJggg==";
+
+document.getElementById('doc_date').value = new Date().toISOString().split('T')[0];
+let itemCount = 0;
+
+function toggleDoc(name){
+  const chk=document.getElementById('chk-'+name), lbl=document.getElementById('lbl-'+name);
+  chk.checked ? lbl.classList.add('checked') : lbl.classList.remove('checked');
+}
+
+function addItem(defaults={}){
+  itemCount++;
+  const id=itemCount, div=document.createElement('div');
+  div.className='item-card'; div.id='item-'+id;
+  div.innerHTML=`<div class="item-num">Equipamento #${id}</div>
+    <button class="remove-btn" onclick="removeItem(${id})">Remover</button>
+    <div class="row cols-2">
+      <div><label>Marca</label><input type="text" id="i${id}_brand" value="${defaults.brand||''}"></div>
+      <div><label>Modelo</label><input type="text" id="i${id}_model" value="${defaults.model||''}"></div>
+    </div>
+    <div class="row cols-2">
+      <div><label>Número de Série</label><input type="text" id="i${id}_sn" value="${defaults.sn||''}"></div>
+      <div><label>Item Code</label><input type="text" id="i${id}_code" value="${defaults.code||''}"></div>
+    </div>
+    <div class="row cols-3">
+      <div><label>Customs Tariff Nr.</label><input type="text" id="i${id}_tariff" value="${defaults.tariff||'90308490'}"></div>
+      <div><label>Valor USD</label><input type="text" id="i${id}_value" value="${defaults.value||''}"></div>
+      <div><label>Peso Líquido (kg)</label><input type="text" id="i${id}_weight" value="${defaults.weight||''}"></div>
+    </div>
+    <div class="row cols-1">
+      <div><label>Descrição do Problema</label><textarea id="i${id}_fault">${defaults.fault||''}</textarea></div>
+    </div>`;
+  document.getElementById('items-list').appendChild(div);
+}
+
+function removeItem(id){ document.getElementById('item-'+id)?.remove(); }
+
+addItem({brand:'MEGGER',model:'SMRT410D',sn:'201807070036',code:'SMRT410-41P2F0I3S0',tariff:'90308490',value:'147.916,80',weight:'19,80',fault:'Equipment inoperative at time of evaluation. Unable to establish communication between equipment and control software. Display shows only backlight (white screen) without information, menus or parameters. Previous repair attempt without full restoration of functionality. Significant accumulation of dirt and particles found on internal components.'});
+
+function getFormData(){
+  const items=[];
+  document.querySelectorAll('.item-card').forEach(card=>{
+    const id=card.id.replace('item-','');
+    items.push({
+      brand:document.getElementById(`i${id}_brand`)?.value||'',
+      model:document.getElementById(`i${id}_model`)?.value||'',
+      sn:document.getElementById(`i${id}_sn`)?.value||'',
+      code:document.getElementById(`i${id}_code`)?.value||'',
+      tariff:document.getElementById(`i${id}_tariff`)?.value||'',
+      value:document.getElementById(`i${id}_value`)?.value||'',
+      weight:document.getElementById(`i${id}_weight`)?.value||'',
+      fault:document.getElementById(`i${id}_fault`)?.value||'',
+    });
+  });
+  const raw=document.getElementById('doc_date').value;
+  const dateStr=raw?raw.split('-').reverse().join('.'):'';
+  return {
+    doc_number:document.getElementById('doc_number').value,
+    doc_date:dateStr,
+    reason:document.getElementById('reason').value,
+    from:{company:document.getElementById('from_company').value,cnpj:document.getElementById('from_cnpj').value,address:document.getElementById('from_address').value,city:document.getElementById('from_city').value,zip:document.getElementById('from_zip').value,country:document.getElementById('from_country').value},
+    to:{company:document.getElementById('to_company').value,address:document.getElementById('to_address').value,city:document.getElementById('to_city').value,zip:document.getElementById('to_zip').value,country:document.getElementById('to_country').value},
+    items,
+    packaging:{num_boxes:document.getElementById('num_boxes').value,net_weight:document.getElementById('net_weight').value,gross_weight:document.getElementById('gross_weight').value,dimensions:document.getElementById('dimensions').value}
+  };
+}
+
+function setStatus(html,type='working'){
+  document.getElementById('status-area').style.display='block';
+  document.getElementById('status-msg').innerHTML=`<div class="status-line ${type}">${html}</div>`;
+}
+
+// ---- DOCX BUILDER (browser) ----
+// Uses JSZip to build docx from scratch matching Megger template structure
+
+function b64toUint8(b64){
+  const bin=atob(b64), arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  return arr;
+}
+
+const NS={
+  w:"http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+  r:"http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+  wp:"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+  a:"http://schemas.openxmlformats.org/drawingml/2006/main",
+  pic:"http://schemas.openxmlformats.org/drawingml/2006/picture",
+  rel:"http://schemas.openxmlformats.org/package/2006/relationships"
+};
+
+function makeDocx(bodyXml, docNum){
+  const zip = new JSZip();
+  const FONT = "Calibri";
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Default Extension="png" ContentType="image/png"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>
+  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+  <Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`;
+
+  const wordRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>
+</Relationships>`;
+
+  const headerRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/>
+</Relationships>`;
+
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}"/><w:sz w:val="20"/></w:rPr></w:rPrDefault></w:docDefaults>
+  <w:style w:type="paragraph" w:styleId="Normal" w:default="1"><w:name w:val="Normal"/><w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}"/><w:sz w:val="20"/></w:rPr></w:style>
+  <w:style w:type="paragraph" w:styleId="Header"><w:name w:val="header"/><w:basedOn w:val="Normal"/></w:style>
+  <w:style w:type="paragraph" w:styleId="TableCell"><w:name w:val="Table Cell"/><w:basedOn w:val="Normal"/></w:style>
+</w:styles>`;
+
+  const settings = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:defaultTabStop w:val="720"/>
+</w:settings>`;
+
+  const header = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+       xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+       xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+       xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+  <w:p>
+    <w:pPr><w:jc w:val="right"/><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="E8001D"/></w:pBdr></w:pPr>
+    <w:r>
+      <w:drawing>
+        <wp:inline><wp:extent cx="2130000" cy="440000"/>
+          <wp:docPr id="1" name="logo"/>
+          <a:graphic>
+            <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+              <pic:pic>
+                <pic:nvPicPr><pic:cNvPr id="1" name="logo"/><pic:cNvPicPr/></pic:nvPicPr>
+                <pic:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>
+                <pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="2130000" cy="440000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>
+              </pic:pic>
+            </a:graphicData>
+          </a:graphic>
+        </wp:inline>
+      </w:drawing>
+    </w:r>
+  </w:p>
+</w:hdr>`;
+
+  const document = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+  <w:body>
+    ${bodyXml}
+    <w:sectPr>
+      <w:headerReference w:type="default" r:id="rId3"/>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="720" w:right="1140" w:bottom="1440" w:left="1340" w:header="720" w:footer="216"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+
+  zip.file("[Content_Types].xml", contentTypes);
+  zip.file("_rels/.rels", rootRels);
+  zip.file("word/_rels/document.xml.rels", wordRels);
+  zip.file("word/_rels/header1.xml.rels", headerRels);
+  zip.file("word/document.xml", document);
+  zip.file("word/header1.xml", header);
+  zip.file("word/styles.xml", styles);
+  zip.file("word/settings.xml", settings);
+  zip.file("word/media/logo.png", b64toUint8(LOGO_B64));
+
+  return zip.generateAsync({type:"blob", mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function p(text, opts={}){
+  const sz = opts.sz || 20;
+  const bold = opts.bold ? '<w:b/>' : '';
+  const color = opts.color ? `<w:color w:val="${opts.color}"/>` : '';
+  const jc = opts.center ? '<w:jc w:val="center"/>' : opts.right ? '<w:jc w:val="right"/>' : '';
+  const before = opts.before ? `<w:before w:val="${opts.before}"/>` : '';
+  const after = opts.after !== undefined ? opts.after : 80;
+  return `<w:p><w:pPr>${jc}<w:spacing w:before="${opts.before||0}" w:after="${after}"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/>${bold}${color}<w:sz w:val="${sz}"/></w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
+}
+
+function emptyP(){ return '<w:p><w:pPr><w:spacing w:before="0" w:after="80"/></w:pPr></w:p>'; }
+
+function cellXml(content, opts={}){
+  const shade = opts.shade ? `<w:shd w:val="clear" w:color="auto" w:fill="${opts.shade}"/>` : '';
+  const w = opts.w || 4680;
+  const borders = opts.noborder ? `<w:tcBorders><w:top w:val="none"/><w:left w:val="none"/><w:bottom w:val="none"/><w:right w:val="none"/></w:tcBorders>` : '';
+  const vAlign = `<w:vAlign w:val="center"/>`;
+  return `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${borders}${shade}${vAlign}<w:tcMar><w:top w:w="80" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar></w:tcPr>${content}</w:tc>`;
+}
+
+function thCell(text, w){ return cellXml(p(text,{bold:true,sz:18}), {shade:'F0F0F0',w}); }
+function tdCell(content, w, noborder){ return cellXml(content, {w, noborder}); }
+
+function addressCellXml(label, lines, w=4680){
+  const content = p(label,{bold:true,sz:20,after:40}) + lines.map(l=>p(l,{sz:18,after:20})).join('');
+  return cellXml(content, {w, noborder:true});
+}
+
+function fromToTable(d){
+  return `<w:tbl>
+    <w:tblPr><w:tblW w:w="9360" w:type="dxa"/><w:tblBorders><w:insideH w:val="none"/><w:insideV w:val="none"/></w:tblBorders></w:tblPr>
+    <w:tblGrid><w:gridCol w:w="4680"/><w:gridCol w:w="4680"/></w:tblGrid>
+    <w:tr>
+      ${addressCellXml("From:", [d.from.company, `CNPJ: ${d.from.cnpj}`, d.from.address, `${d.from.zip} ${d.from.city}`, d.from.country])}
+      ${addressCellXml("To:", [d.to.company, d.to.address, `${d.to.zip} ${d.to.city}`, d.to.country])}
+    </w:tr>
+  </w:tbl>`;
+}
+
+function buildInvoiceXml(d){
+  const itemRows = d.items.map((it,i)=>`<w:tr>
+    ${tdCell(p(String(i+1),{sz:18,center:true}),600)}
+    ${tdCell(p(it.code,{sz:18}),1400)}
+    ${tdCell(p(it.brand+' '+it.model,{bold:true,sz:18,after:20})+p('SN: '+it.sn,{sz:18,after:20})+p('Customs Tariff Number: '+it.tariff,{sz:18,after:20})+p('Net Weight: '+it.weight+' kg',{sz:18}),5200)}
+    ${tdCell(p('1,00',{sz:18,center:true}),800)}
+    ${tdCell(p('USD '+it.value,{sz:18,center:true}),1360)}
+  </w:tr>`).join('');
+
+  return p(`Invoice Nr.: ${d.doc_number}`,{sz:20,before:200,after:40})
+    + p(`Date: ${d.doc_date}`,{sz:20,after:240})
+    + fromToTable(d) + emptyP()
+    + `<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/></w:tblPr>
+       <w:tblGrid><w:gridCol w:w="600"/><w:gridCol w:w="1400"/><w:gridCol w:w="5200"/><w:gridCol w:w="800"/><w:gridCol w:w="1360"/></w:tblGrid>
+       <w:tr>${thCell('Pos',600)}${thCell('Item',1400)}${thCell('Description',5200)}${thCell('Qty',800)}${thCell('Total',1360)}</w:tr>
+       ${itemRows}</w:tbl>`
+    + emptyP()
+    + p('No Commercial Value - Value for Customs purposes only',{sz:18,center:true,before:200,after:200})
+    + p('Dimensions:',{sz:18,after:60})
+    + p(d.packaging.num_boxes+' Box(es)',{sz:18,after:40})
+    + p('Net Weight: '+d.packaging.net_weight+' kg',{sz:18,after:40})
+    + p('Gross Weight: '+d.packaging.gross_weight+' kg',{sz:18,after:40})
+    + (d.packaging.dimensions ? p('Dimensions: '+d.packaging.dimensions,{sz:18}) : '');
+}
+
+function buildPackingXml(d){
+  const itemRows = d.items.map((it,i)=>`<w:tr>
+    ${tdCell(p(String(i+1),{sz:18,center:true}),600)}
+    ${tdCell(p(it.code,{sz:18}),1400)}
+    ${tdCell(p(it.brand+' '+it.model,{bold:true,sz:18,after:20})+p('SN: '+it.sn,{sz:18,after:20})+p('Customs Tariff Number: '+it.tariff,{sz:18,after:20})+p('Net Weight: '+it.weight+' kg',{sz:18}),6160)}
+    ${tdCell(p('1,00',{sz:18,center:true}),1200)}
+  </w:tr>`).join('');
+
+  return p(`Packing List Nr.: ${d.doc_number}`,{sz:20,before:200,after:40})
+    + p(`Date: ${d.doc_date}`,{sz:20,after:240})
+    + fromToTable(d) + emptyP()
+    + `<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/></w:tblPr>
+       <w:tblGrid><w:gridCol w:w="600"/><w:gridCol w:w="1400"/><w:gridCol w:w="6160"/><w:gridCol w:w="1200"/></w:tblGrid>
+       <w:tr>${thCell('Pos',600)}${thCell('Item',1400)}${thCell('Description',6160)}${thCell('Qty',1200)}</w:tr>
+       ${itemRows}</w:tbl>`
+    + emptyP()
+    + p('Dimensions:',{sz:18,after:60})
+    + p(d.packaging.num_boxes+' Box(es)',{sz:18,after:40})
+    + p('Net Weight: '+d.packaging.net_weight+' kg',{sz:18,after:40})
+    + p('Gross Weight: '+d.packaging.gross_weight+' kg',{sz:18,after:40})
+    + (d.packaging.dimensions ? p('Dimensions: '+d.packaging.dimensions,{sz:18}) : '');
+}
+
+function buildReportXml(d){
+  const itemSections = d.items.map((it,i)=>{
+    return p(`${i+1}. Equipment`,{bold:true,sz:22,before:200,after:80})
+      + `<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/></w:tblPr>
+         <w:tblGrid><w:gridCol w:w="2000"/><w:gridCol w:w="7360"/></w:tblGrid>`
+      + [['Brand',it.brand],['Model',it.model],['Serial Number',it.sn],['Item Code',it.code]].map(([k,v])=>
+          `<w:tr>${cellXml(p(k,{bold:true,sz:18}),{shade:'F5F5F5',w:2000})}${cellXml(p(v,{sz:18}),{w:7360})}</w:tr>`
+        ).join('')
+      + `</w:tbl>`
+      + p('Fault Description:',{bold:true,sz:20,before:160,after:80})
+      + p(it.fault,{sz:18,after:80});
+  }).join('');
+
+  return p('TECHNICAL REPORT',{bold:true,sz:28,color:'E8001D',center:true,before:400,after:120})
+    + p(`Ref.: ${d.doc_number}   |   Date: ${d.doc_date}`,{sz:18,color:'666666',center:true,after:400})
+    + p('1. Purpose',{bold:true,sz:22,after:100})
+    + p(`This Technical Report documents the condition of equipment being returned to ${d.to.company} (${d.to.city}, ${d.to.country}) for repair and service, sent by ${d.from.company} (${d.from.city}, ${d.from.country}).`,{sz:20,after:300})
+    + p('2. Equipment Under Evaluation',{bold:true,sz:22,after:100})
+    + itemSections
+    + p('3. Conclusion',{bold:true,sz:22,before:300,after:100})
+    + p('Based on the technical evaluation described above, it is recommended that the equipment be returned to the manufacturer for repair and full restoration of functionality. The equipment is being shipped in accordance with applicable international trade regulations.',{sz:20,after:600})
+    + p('_______________________________',{sz:20,after:40})
+    + p('Raphael Vieira',{bold:true,sz:20,after:20})
+    + p('Lab Technician — Megger Brasil',{sz:18,after:20})
+    + p(`${d.from.city}, ${d.doc_date}`,{sz:18,after:20});
+}
+
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+
+async function generateDocs(){
+  const data = getFormData();
+  if(!data.items.length){ setStatus('⚠️ Adicione ao menos um equipamento.','error'); return; }
+  const doInvoice = document.getElementById('chk-invoice').checked;
+  const doPacking = document.getElementById('chk-packing').checked;
+  const doReport  = document.getElementById('chk-report').checked;
+  if(!doInvoice && !doPacking && !doReport){ setStatus('⚠️ Selecione ao menos um tipo de documento.','error'); return; }
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  document.getElementById('download-area').innerHTML = '';
+  setStatus('<div class="spinner"></div> Gerando documentos...','working');
+
+  try {
+    const downloads = [];
+
+    if(doInvoice){
+      setStatus('<div class="spinner"></div> Gerando Invoice...','working');
+      const blob = await makeDocx(buildInvoiceXml(data), data.doc_number);
+      downloads.push({ blob, name: `Invoice_${data.doc_number}.docx`, label: 'Invoice', icon: '🧾' });
+    }
+    if(doPacking){
+      setStatus('<div class="spinner"></div> Gerando Packing List...','working');
+      const blob = await makeDocx(buildPackingXml(data), data.doc_number);
+      downloads.push({ blob, name: `PackingList_${data.doc_number}.docx`, label: 'Packing List', icon: '📦' });
+    }
+    if(doReport){
+      setStatus('<div class="spinner"></div> Gerando Relatório Técnico...','working');
+      const blob = await makeDocx(buildReportXml(data), data.doc_number);
+      downloads.push({ blob, name: `TechnicalReport_${data.doc_number}.docx`, label: 'Technical Report', icon: '📋' });
+    }
+
+    setStatus('✓ Documentos prontos para download!','done');
+
+    const grid = document.createElement('div');
+    grid.className = 'download-grid';
+    downloads.forEach(dl => {
+      const card = document.createElement('div');
+      card.className = 'download-card';
+      card.innerHTML = `<div class="doc-icon">${dl.icon}</div><div class="doc-label">${dl.label}</div>`;
+      const btn2 = document.createElement('button');
+      btn2.className = 'dl-btn';
+      btn2.textContent = '⬇ Baixar';
+      btn2.onclick = () => downloadBlob(dl.blob, dl.name);
+      card.appendChild(btn2);
+      grid.appendChild(card);
+    });
+    document.getElementById('download-area').appendChild(grid);
+
+    // Auto-download all
+    for(const dl of downloads){
+      downloadBlob(dl.blob, dl.name);
+      await new Promise(r => setTimeout(r, 400));
+    }
+
+  } catch(err){
+    setStatus('✕ Erro: ' + err.message,'error');
+    console.error(err);
+  }
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
